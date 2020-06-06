@@ -34,8 +34,8 @@ class App:
         self.api_key = self.settings["api_key"]
         
         font = graphics.Font()
-        self.time_font = font.LoadFont("fontfile")
-        self.weather_font = font.LoadFont("fontfile")
+        self.time_font = font.LoadFont("fonts/6x9.bdf")
+        self.weather_font = font.LoadFont("fonts/4x6.bdf")
         
         self.timer = Timer()
     
@@ -82,9 +82,9 @@ class App:
                 fg_color = graphics.Color(250, 100, 255)
                 bg_color = graphics.Color(8, 0, 10)
                 # modify canvas with time/weather
-                graphics.FillCanvas(bg_color)
-                graphics.DrawText(canvas, self.time_font, canvas.width, 1, fg_color, time_now)
-                graphics.DrawText(canvas, self.weather_font, canvas.width, 10, fg_color, weather_now)
+                canvas.FillCanvas(bg_color)
+                graphics.DrawText(canvas, self.time_font, canvas.width - 1, canvas.height, fg_color, time_now)
+                graphics.DrawText(canvas, self.weather_font, canvas.width - 1, canvas.height - 10, fg_color, weather_now)
                 canvas = matrix.SwapOnVSync(canvas)
                 
     def get_time(self):
