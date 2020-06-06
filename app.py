@@ -38,24 +38,6 @@ class App:
         self.weather_font = font.LoadFont("fontfile")
         
         self.timer = Timer()
-
-    async def loop(self):
-        matrix = self.init_matrix()
-        canvas = matrix.CreateFrameCanvas()
-        weather_now = "Loading..."
-        async with aiohttp.ClientSession() as client:
-            weather_api = Weather(self.api_key, client)
-            while True:
-                weather_now = self.get_weather(weather_api, weather_now)
-                time_now = self.get_time()
-                
-                # 
-                print(f"{time_now} {weather_now}", end="\r")
-                
-    def get_time(self):
-        current_time = time.localtime(time.time())
-        time_string = f"{current_time[3]:02}:{current_time[4]:02}"
-        return time_string
     
     def init_matrix(self):
         args = self.parser.parse_args()
@@ -86,10 +68,33 @@ class App:
           options.disable_hardware_pulsing = True
 
         return RGBMatrix(options = options)
+
+    async def loop(self):
+        matrix = self.init_matrix()
+        canvas = matrix.CreateFrameCanvas()
+        weather_now = "Loading..."
+        
+        async with aiohttp.ClientSession() as client:
+            weather_api = Weather(self.api_key, client)
+            while True:
+                weather_now = self.get_weather(weather_api, weather_now)
+                time_now = self.get_time()
+                fg_color = graphics.Color(250, 100, 255)
+                bg_color = graphics.Color(8, 0, 10)
+                # modify canvas with time/weather
+                graphics.FillCanvas(bg_color)
+                graphics.DrawText(canvas, self.time_font, canvas.width, 1, fg_color, time_now)
+                graphics.DrawText(canvas, self.weather_font, canvas.width, 10, fg_color, weather_now)
+                canvas = matrix.SwapOnVSync(canvas)
+                
+    def get_time(self):
+        current_time = time.localtime(time.time())
+        time_string = f"{current_time[3]:02}:{current_time[4]:02}"
+        return time_string
     
     def get_weather(self, weather_api, weather_then):
         weather = weather_then
-        if self.timer.elapsed() > 60.0 * 5:
+        if self.timer.elapsed() > (60.0 * 5):
             weather = weather_api.update()
         return weather
 
