@@ -5,19 +5,19 @@ import asyncio
 import aiohttp
 from weather import Weather
 from timer import Timer
-from rgbmatrix import RGBMatrix, RGBMatrixOptions
+from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 
 class App:
     
     def __init__(self, *args, **kwargs):
         self.parser = argparse.ArgumentParser()
 
-        self.parser.add_argument("-r", "--led-rows", action="store", help="Display rows. 16 for 16x32, 32 for 32x32. Default: 32", default=32, type=int)
+        self.parser.add_argument("-r", "--led-rows", action="store", help="Display rows. 16 for 16x32, 32 for 32x32. Default: 16", default=16, type=int)
         self.parser.add_argument("--led-cols", action="store", help="Panel columns. Typically 32 or 64. (Default: 32)", default=32, type=int)
         self.parser.add_argument("-c", "--led-chain", action="store", help="Daisy-chained boards. Default: 1.", default=1, type=int)
         self.parser.add_argument("-P", "--led-parallel", action="store", help="For Plus-models or RPi2: parallel chains. 1..3. Default: 1", default=1, type=int)
         self.parser.add_argument("-p", "--led-pwm-bits", action="store", help="Bits used for PWM. Something between 1..11. Default: 11", default=11, type=int)
-        self.parser.add_argument("-b", "--led-brightness", action="store", help="Sets brightness level. Default: 100. Range: 1..100", default=100, type=int)
+        self.parser.add_argument("-b", "--led-brightness", action="store", help="Sets brightness level. Default: 25. Range: 1..100", default=25, type=int)
         self.parser.add_argument("-m", "--led-gpio-mapping", help="Hardware Mapping: regular, adafruit-hat, adafruit-hat-pwm" , choices=['regular', 'adafruit-hat', 'adafruit-hat-pwm'], type=str)
         self.parser.add_argument("--led-scan-mode", action="store", help="Progressive or interlaced scan. 0 Progressive, 1 Interlaced (default)", default=1, choices=range(2), type=int)
         self.parser.add_argument("--led-pwm-lsb-nanoseconds", action="store", help="Base time-unit for the on-time in the lowest significant bit in nanoseconds. Default: 130", default=130, type=int)
@@ -31,21 +31,28 @@ class App:
         self.parser.add_argument("--led-panel-type", action="store", help="Needed to initialize special panels. Supported: 'FM6126A'", default="", type=str)
 
         self.settings = json.load(open("settings.json"))
+        self.api_key = self.settings["api_key"]
+        
+        font = graphics.Font()
+        self.time_font = font.LoadFont("fontfile")
+        self.weather_font = font.LoadFont("fontfile")
+        
+        self.timer = Timer()
 
-    async def loop(self, api_key):
-        timer = Timer()
+    async def loop(self):
         matrix = self.init_matrix()
-        w = "Loading..."
+        canvas = matrix.CreateFrameCanvas()
+        weather_now = "Loading..."
         async with aiohttp.ClientSession() as client:
-            weather = Weather(api_key, client)
+            weather_api = Weather(self.api_key, client)
             while True:
-                if timer.elapsed() > 60.0:
-                    w = await weather.update()
-                    timer.reset()
-                time_now = self.clock()
-                print(f"{time_now} {w}", end="\r")
+                weather_now = self.get_weather(weather_api, weather_now)
+                time_now = self.get_time()
                 
-    def clock(self):
+                # 
+                print(f"{time_now} {weather_now}", end="\r")
+                
+    def get_time(self):
         current_time = time.localtime(time.time())
         time_string = f"{current_time[3]:02}:{current_time[4]:02}"
         return time_string
@@ -79,7 +86,13 @@ class App:
           options.disable_hardware_pulsing = True
 
         return RGBMatrix(options = options)
+    
+    def get_weather(self, weather_api, weather_then):
+        weather = weather_then
+        if self.timer.elapsed() > 60.0 * 5:
+            weather = weather_api.update()
+        return weather
 
 if __name__ == "__main__":
     app = App()
-    asyncio.run(app.loop(self.settings["api_key"]))
+    asyncio.run(app.loop())
