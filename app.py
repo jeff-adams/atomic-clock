@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import time
 import argparse
 import json
@@ -33,9 +35,10 @@ class App:
         self.settings = json.load(open("settings.json"))
         self.api_key = self.settings["api_key"]
         
-        font = graphics.Font()
-        self.time_font = font.LoadFont("fonts/6x9.bdf")
-        self.weather_font = font.LoadFont("fonts/4x6.bdf")
+        self.time_font = graphics.Font()
+        self.time_font.LoadFont("fonts/6x9.bdf")
+        self.weather_font = graphics.Font()
+        self.weather_font.LoadFont("fonts/4x6.bdf")
         
         self.timer = Timer()
     
@@ -57,7 +60,8 @@ class App:
         options.pwm_lsb_nanoseconds = args.led_pwm_lsb_nanoseconds
         options.led_rgb_sequence = args.led_rgb_sequence
         options.pixel_mapper_config = args.led_pixel_mapper
-        options.panel_type = args.led_panel_type
+        # Gave error that no options named panel_type existed
+        #options.panel_type = args.led_panel_type
 
         if args.led_show_refresh:
           options.show_refresh_rate = 1
@@ -81,10 +85,11 @@ class App:
                 time_now = self.get_time()
                 fg_color = graphics.Color(250, 100, 255)
                 bg_color = graphics.Color(8, 0, 10)
+                
                 # modify canvas with time/weather
-                canvas.FillCanvas(bg_color)
-                graphics.DrawText(canvas, self.time_font, canvas.width - 1, canvas.height, fg_color, time_now)
-                graphics.DrawText(canvas, self.weather_font, canvas.width - 1, canvas.height - 10, fg_color, weather_now)
+                canvas.Fill(bg_color.red, bg_color.green, bg_color.blue)
+                graphics.DrawText(canvas, self.time_font, 1, canvas.height - 8, fg_color, time_now)
+                graphics.DrawText(canvas, self.weather_font, 1, canvas.height - 1, fg_color, weather_now)
                 canvas = matrix.SwapOnVSync(canvas)
                 
     def get_time(self):

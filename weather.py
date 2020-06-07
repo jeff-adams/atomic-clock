@@ -29,4 +29,4 @@ class Weather:
         temp = int(round(temp,0))
         degree_symbol = u'\u00B0'
         
-        return f"{temp}{degree_symbol} - {description}"     
+        return f"{temp}{degree_symbol}{description}"     
